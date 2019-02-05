@@ -1,0 +1,120 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "apimanagementname": {
+      "type": "string",
+      "defaultValue": "apim-integration-dev",
+      "allowedValues": [
+        "apim-integration-dev",
+        "apim-integration-uat",
+        "apim-integration-prod"
+      ]
+    },
+    "publisheremail": {
+      "type": "string",
+      "defaultValue": "abhishekcskumar@hotmail.com",
+      "allowedValues": [
+        "abhishekcskumar@hotmail.com"
+      ]
+    },
+    "sku": {
+      "type": "string",
+      "defaultValue": "Developer",
+      "allowedValues": [
+        "Developer",
+        "Standard",
+        "Premium"
+      ]
+    },
+    "tenantpolicy": {
+      "type": "string",
+      "metadata": {
+        "description": "Global Tenant policy XML."
+      }
+    }
+
+  },
+  "variables": {
+    "azureapiManagementName": "[parameters('apimanagementname')]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2017-03-01",
+      "comments": "Sample API Management Instance",
+      "dependsOn": [],
+      "location": "[resourceGroup().location]",
+      "name": "[parameters('apimanagementname')]",
+      "properties": {
+        "publisherEmail": "[parameters('publisheremail')]",
+        "publisherName": "[parameters('apimanagementname')]",
+        "notificationSenderEmail": "apimgmt-noreply@mail.windowsazure.com"
+      },
+      "resources": [
+        {
+          "apiVersion": "2017-03-01",
+          "type": "apis",
+          "name": "sampleswaggerforpetstore",
+          "dependsOn": [
+            "[concat('/subscriptions/','[subscription().subscriptionId]','/resourceGroups/','[resourceGroup().name]','/providers/','Microsoft.ApiManagement/service/', variables('azureapiManagementName'))]"
+          ],
+          "properties": {
+            "contentFormat": "swagger-link-json",
+            "contentValue": "http://petstore.swagger.io/v2/swagger.json",
+            "path": "examplepetstore"
+          }
+        },
+        {
+          "apiVersion": "2017-03-01",
+          "type": "apis",
+          "name": "samplellogicapps",
+          "dependsOn": [
+            "[concat('Microsoft.ApiManagement/service/', variables('azureapiManagementName'))]"
+          ],
+          "properties": {
+            "serviceUrl": "https://logicappsendpoint",
+            "path": "logicapps",
+            "protocols": [
+              "https"
+            ]
+          }
+        },
+        {
+          "apiVersion": "2017-03-01",
+          "type": "products",
+          "name": "exampleProduct",
+          "dependsOn": [
+            "[concat('/subscriptions/','[subscription().subscriptionId]','/resourceGroups/','[resourceGroup().name]','/providers/','Microsoft.ApiManagement/service/', variables('azureapiManagementName'))]"
+          ],
+          "properties": {
+            "displayName": "Sample Product Name",
+            "description": "Description for sample product",
+            "subscriptionRequired": true,
+            "approvalRequired": false,
+            "subscriptionsLimit": 1,
+            "state": "published"
+          },
+          "resources": [
+            {
+              "apiVersion": "2017-03-01",
+              "type": "apis",
+              "name": "exampleApi",
+              "dependsOn": [
+                "[concat('/subscriptions/','[subscription().subscriptionId]','/resourceGroups/','[resourceGroup().name]','/providers/','Microsoft.ApiManagement/service/', variables('azureapiManagementName'))]",
+                "[concat('Microsoft.ApiManagement/service/', variables('azureapiManagementName'), '/apis/sampleswaggerforpetstore')]"
+              ]
+            }
+          ]
+        }
+      ],
+      "scale": null,
+      "sku": {
+        "name": "[parameters('sku')]",
+        "capacity": 1
+      },
+      "tags": {},
+      "type": "Microsoft.ApiManagement/service"
+    }
+  ],
+  "outputs": {}
+}

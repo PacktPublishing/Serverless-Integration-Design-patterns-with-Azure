@@ -1,0 +1,11 @@
+C:\Git\ShipAnyWhere-FaceAPITest\obj\Debug\netcoreapp2.2\ShipAnyWhere-FaceAPITest.csprojAssemblyReference.cache
+C:\Git\ShipAnyWhere-FaceAPITest\obj\Debug\netcoreapp2.2\ShipAnyWhere-FaceAPITest.csproj.CoreCompileInputs.cache
+C:\Git\ShipAnyWhere-FaceAPITest\obj\Debug\netcoreapp2.2\ShipAnyWhere-FaceAPITest.AssemblyInfoInputs.cache
+C:\Git\ShipAnyWhere-FaceAPITest\obj\Debug\netcoreapp2.2\ShipAnyWhere-FaceAPITest.AssemblyInfo.cs
+C:\Git\ShipAnyWhere-FaceAPITest\bin\Debug\netcoreapp2.2\ShipAnyWhere-FaceAPITest.deps.json
+C:\Git\ShipAnyWhere-FaceAPITest\bin\Debug\netcoreapp2.2\ShipAnyWhere-FaceAPITest.runtimeconfig.json
+C:\Git\ShipAnyWhere-FaceAPITest\bin\Debug\netcoreapp2.2\ShipAnyWhere-FaceAPITest.runtimeconfig.dev.json
+C:\Git\ShipAnyWhere-FaceAPITest\bin\Debug\netcoreapp2.2\ShipAnyWhere-FaceAPITest.dll
+C:\Git\ShipAnyWhere-FaceAPITest\bin\Debug\netcoreapp2.2\ShipAnyWhere-FaceAPITest.pdb
+C:\Git\ShipAnyWhere-FaceAPITest\obj\Debug\netcoreapp2.2\ShipAnyWhere-FaceAPITest.dll
+C:\Git\ShipAnyWhere-FaceAPITest\obj\Debug\netcoreapp2.2\ShipAnyWhere-FaceAPITest.pdb

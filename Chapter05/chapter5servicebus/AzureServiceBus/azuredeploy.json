@@ -1,0 +1,154 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "azureservicebusnamepaceName": {
+      "type": "string",
+      "defaultValue": "sb-ause-devintegration",
+      "allowedValues": [
+        "sb-ause-devintegration",
+        "sb-ause-testintegration",
+        "sb-ause-uatintegration",
+        "sb-ause-prodintegration"
+      ]
+    },
+    "azureservicebusOrderProcessingqueue": {
+      "type": "string",
+      "defaultValue": "order-queue01"
+    },
+    "azureservicebussocialgraphtopic": {
+      "type": "string",
+      "defaultValue": "socialgraph-topic"
+    },
+    "azuresbtopicsubscription": {
+      "type": "string",
+      "defaultValue": "socialgraph-subscription"
+    },
+    "azuresbtopicsubscriptionrulename": {
+      "type": "string",
+      "defaultValue": "socialgraph"
+    },
+    "azureservicebusenvionment": {
+      "type": "string",
+      "defaultValue": "dev",
+      "allowedValues": [
+        "dev",
+        "test",
+        "uat",
+        "prod"
+      ]
+    }
+  },
+  "variables": {
+    "defaultSASKeyName": "RootManageSharedAccessKey",
+    "authRuleResourceId": "[resourceId('Microsoft.ServiceBus/namespaces/authorizationRules', parameters('azureservicebusnamepaceName'), variables('defaultSASKeyName'))]",
+    "sbVersion": "2017-04-01"
+  },
+
+  "resources": [
+    {
+      "apiVersion": "2017-04-01",
+      "dependsOn": [],
+      "location": "[resourceGroup().location]",
+      "name": "[parameters('azureservicebusnamepaceName')]",
+      "properties": {},
+      "scale": null,
+      "sku": {
+        "name": "Standard"
+      },
+      "tags": {
+        "resourceType": "Azure Service Bus",
+        "envionment": "[parameters('azureservicebusenvionment')]"
+      },
+      "type": "Microsoft.ServiceBus/namespaces"
+    },
+    {
+      "apiVersion": "2017-04-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.ServiceBus/namespaces', parameters('azureservicebusnamepaceName'))]"
+      ],
+      "location": "[resourceGroup().location]",
+      "name": "[concat(parameters('azureservicebusnamepaceName'), '/',parameters('azureservicebusOrderProcessingqueue'))]",
+      "properties": {
+        "lockDuration": "PT30S",
+        "maxSizeInMegabytes": 1024,
+        "requiresDuplicateDetection": false,
+        "requiresSession": false,
+        "defaultMessageTimeToLive": "P14D",
+        "deadLetteringOnMessageExpiration": false,
+        "enableBatchedOperations": true,
+        "duplicateDetectionHistoryTimeWindow": "PT10M",
+        "maxDeliveryCount": 10,
+        "status": "Active",
+        "autoDeleteOnIdle": "P10675199DT2H48M5.4775807S",
+        "enablePartitioning": true,
+        "enableExpress": false
+      },
+      "scale": null,
+      "type": "Microsoft.ServiceBus/namespaces/queues"
+    },
+    {
+      "type": "Microsoft.ServiceBus/namespaces/topics",
+      "name": "[concat(parameters('azureservicebusnamepaceName'), '/', parameters('azureservicebussocialgraphtopic'))]",
+      "apiVersion": "2017-04-01",
+      "location": "[resourceGroup().location]",
+      "scale": null,
+      "properties": {
+        "defaultMessageTimeToLive": "P14D",
+        "maxSizeInMegabytes": 1024,
+        "requiresDuplicateDetection": false,
+        "duplicateDetectionHistoryTimeWindow": "PT10M",
+        "enableBatchedOperations": true,
+        "status": "Active",
+        "supportOrdering": false,
+        "autoDeleteOnIdle": "P10675199DT2H48M5.4775807S",
+        "enablePartitioning": true,
+        "enableExpress": false
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ServiceBus/namespaces', parameters('azureservicebusnamepaceName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ServiceBus/namespaces/topics/subscriptions",
+      "name": "[concat(parameters('azureservicebusnamepaceName'), '/', parameters('azureservicebussocialgraphtopic'), '/', parameters('azuresbtopicsubscription'))]",
+      "apiVersion": "2017-04-01",
+      "location": "[resourceGroup().location]",
+      "scale": null,
+      "properties": {
+        "lockDuration": "PT30S",
+        "requiresSession": false,
+        "defaultMessageTimeToLive": "P14D",
+        "deadLetteringOnMessageExpiration": false,
+        "deadLetteringOnFilterEvaluationExceptions": true,
+        "maxDeliveryCount": 10,
+        "status": "Active",
+        "enableBatchedOperations": false,
+        "autoDeleteOnIdle": "P10675199DT2H48M5.4775807S"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ServiceBus/namespaces', parameters('azureservicebusnamepaceName'))]",
+        "[resourceId('Microsoft.ServiceBus/namespaces/topics', parameters('azureservicebusnamepaceName'), parameters('azureservicebussocialgraphtopic'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ServiceBus/namespaces/topics/subscriptions/rules",
+      "name": "[concat(parameters('azureservicebusnamepaceName'), '/', parameters('azureservicebussocialgraphtopic'), '/', parameters('azuresbtopicsubscription'), '/', parameters('azuresbtopicsubscriptionrulename'))]",
+      "apiVersion": "2017-04-01",
+      "location": "West US",
+      "scale": null,
+      "properties": {
+        "action": {},
+        "filterType": "SqlFilter",
+        "sqlFilter": {
+          "sqlExpression": "MessageType='Socialconnect'"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ServiceBus/namespaces', parameters('azureservicebusnamepaceName'))]",
+        "[resourceId('Microsoft.ServiceBus/namespaces/topics', parameters('azureservicebusnamepaceName'), parameters('azureservicebussocialgraphtopic'))]",
+        "[resourceId('Microsoft.ServiceBus/namespaces/topics/subscriptions', parameters('azureservicebusnamepaceName'), parameters('azureservicebussocialgraphtopic'), parameters('azuresbtopicsubscription'))]"
+      ]
+    }
+  ]
+}

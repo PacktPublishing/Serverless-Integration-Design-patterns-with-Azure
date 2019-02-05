@@ -1,0 +1,163 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "apiresourcelocation": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "allowedValues": [
+        "southeastasia",
+        "australiaeast",
+        "australiasoutheast",
+        "[resourceGroup().location]"
+      ],
+      "metadata": {
+        "description": "API connection resource location"
+      }
+    },
+    "servicebusname": {
+      "type": "string",
+      "defaultValue": "dev.servicebus",
+      "allowedValues": [
+        "dev.servicebus",
+        "uat.servicebus",
+        "uat.servicebus"
+      ],
+      "metadata": {
+        "description": "Service bus name"
+      }
+    },
+    "cosmosdbconnectionname": {
+      "type": "string",
+      "defaultValue": "dev.cosmosdatabase",
+      "allowedValues": [
+        "dev.cosmosdatabase",
+        "uat.cosmosdatabase",
+        "uat.cosmosdatabase"
+      ],
+      "metadata": {
+        "description": "cosmos database name"
+      }
+    },
+    "outlookconnectionname": {
+      "type": "string",
+      "defaultValue": "dev.office365",
+      "allowedValues": [
+        "dev.office365",
+        "uat.office365",
+        "uat.office365"
+      ],
+      "metadata": {
+        "description": "cosmos database name"
+      }
+    },
+    "sqlserverconnecitonName": {
+      "type": "string",
+      "defaultValue": "dev.sql",
+      "allowedValues": [
+        "dev.sql",
+        "uat.sql",
+        "uat.sql"
+      ],
+      "metadata": {
+        "description": "cosmos database name"
+      }
+    },
+    "azuresbconnectionstring": {
+      "type": "securestring",
+      "metadata": {
+        "description": " Service Bus Connection String"
+      }
+    },
+    "sqlserverName": {
+      "type": "string",
+      "metadata": {
+        "description": " Sql Server Name"
+      }
+    },
+    "sqldatabaseName": {
+      "type": "string",
+      "metadata": {
+        "description": " Sql Server database name"
+      }
+    },
+    "sqluserid": {
+      "type": "string",
+      "metadata": {
+        "description": " Sql Server database User name"
+      }
+    },
+    "sqlpassword": {
+      "type": "string",
+      "metadata": {
+        "description": " Sql Server database pasword"
+      }
+    }
+  },
+  "variables": {},
+  "resources": [
+    {
+      "type": "Microsoft.Web/connections",
+      "apiVersion": "2016-06-01",
+      "name": "[parameters('servicebusname')]",
+      "location": "[parameters('apiresourcelocation')]",
+      "properties": {
+        "api": {
+          "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', parameters('apiresourcelocation'), '/managedApis/servicebus')]"
+        },
+        "displayName": "Azure Servicebus",
+        "parameterValues": {
+          "connectionString": "[parameters('azuresbconnectionstring')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Web/connections",
+      "name": "[parameters('cosmosdbconnectionname')]",
+      "apiVersion": "2016-06-01",
+      "location": "[parameters('apiresourcelocation')]",
+      "scale": null,
+      "properties": {
+        "displayName": "cosmos database connection",
+        "customParameterValues": {},
+        "api": {
+          "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', parameters('apiresourcelocation'), '/managedApis/documentdb')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Web/connections",
+      "apiVersion": "2016-06-01",
+      "name": "[parameters('outlookconnectionname')]",
+      "location": "[parameters('apiresourcelocation')]",
+      "properties": {
+        "api": {
+          "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', parameters('apiresourcelocation'), '/managedApis/office365')]"
+        },
+        "displayName": "Office365 email send connector"
+      }
+    },
+    {
+      "type": "Microsoft.Web/connections",
+      "apiVersion": "2016-06-01",
+      "name": "[parameters('sqlserverconnecitonName')]",
+      "location": "[parameters('apiresourcelocation')]",
+      "properties": {
+        "api": {
+          "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', parameters('apiresourcelocation'), '/managedApis/sql')]"
+        },
+        "displayName": "SQL Server API Connecton",
+        "parameterValues": {
+          "server": "[parameters('sqlserverName')]",
+          "database": "[parameters('sqldatabaseName')]",
+          "username": "[parameters('sqluserid')]",
+          "password": "[parameters('sqlpassword')]"
+        }
+      }
+    }
+  ],
+
+  "outputs": {}
+}
+
+

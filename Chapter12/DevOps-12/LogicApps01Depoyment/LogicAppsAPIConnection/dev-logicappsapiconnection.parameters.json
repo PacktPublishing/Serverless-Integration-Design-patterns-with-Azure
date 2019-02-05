@@ -1,0 +1,33 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "servicebusname": {
+      "value": "dev.servicebus"
+    },
+    "cosmosdbconnectionname": {
+      "value": "dev.cosmosdatabase"
+    },
+    "outlookconnectionname": {
+      "value": "dev.office365"
+    },
+    "sqlserverconnecitonName": {
+      "value": "dev.sql"
+    },
+    "azuresbconnectionstring": {
+      "value": "sample connection string"
+    },
+    "sqlserverName": {
+      "value": " sql server name"
+    },
+    "sqldatabaseName": {
+      "value": "sql server db names"
+    },
+    "sqluserid": {
+      "value": "sql server db userid"
+    },
+    "sqlpassword": {
+      "value": "password"
+    }
+  }
+}

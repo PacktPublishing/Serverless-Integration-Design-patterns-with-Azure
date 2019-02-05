@@ -1,0 +1,1127 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "logicAppName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "metadata": {
+        "description": "Name of the Logic App."
+      }
+    },
+    "telesignsms_1_Connection_Name": {
+      "type": "string",
+      "defaultValue": "telesignsms"
+    },
+    "telesignsms_1_Connection_DisplayName": {
+      "type": "string",
+      "defaultValue": "Dev.TeleSign"
+    },
+    "documentdb_1_Connection_Name": {
+      "type": "string",
+      "defaultValue": "documentdb"
+    },
+    "documentdb_1_Connection_DisplayName": {
+      "type": "string",
+      "defaultValue": "sqlser"
+    },
+    "documentdb_1_databaseAccount": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the account without 'documents.azure.com' part"
+      },
+      "defaultValue": "sampleintegration02"
+    },
+    "documentdb_1_accessKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Primary or Secondary Key"
+      }
+    },
+    "telesignsms_1_username": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The Customer ID for this api"
+      }
+    },
+    "telesignsms_1_password": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The API Key for this api"
+      }
+    },
+    "outlook_1_Connection_Name": {
+      "type": "string",
+      "defaultValue": "outlook"
+    },
+    "outlook_1_Connection_DisplayName": {
+      "type": "string",
+      "defaultValue": "sampleworkflow@hotmail.com"
+    },
+    "logicAppLocation": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "allowedValues": [
+        "[resourceGroup().location]",
+        "australiaeast",
+        "australiasoutheast",
+        "brazilsouth",
+        "centralus",
+        "eastasia",
+        "eastus",
+        "eastus2",
+        "japaneast",
+        "japanwest",
+        "northcentralus",
+        "northeurope",
+        "southcentralus",
+        "southeastasia",
+        "westeurope",
+        "westus"
+      ],
+      "metadata": {
+        "description": "Location of the Logic App."
+      }
+    }
+  },
+  "variables": {},
+  "resources": [
+    {
+      "name": "sampleintegration0701",
+      "type": "Microsoft.Logic/workflows",
+      "location": "[parameters('logicAppLocation')]",
+      "apiVersion": "2016-06-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/connections', parameters('outlook_1_Connection_Name'))]",
+        "[resourceId('Microsoft.Web/connections', parameters('telesignsms_1_Connection_Name'))]"
+      ],
+      "tags": {
+        "displayName": "sampleintegration0701"
+      },
+      "properties": {
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "$connections": {
+              "defaultValue": {},
+              "type": "Object"
+            }
+          },
+          "triggers": {
+            "When_a_new_email_arrives": {
+              "recurrence": {
+                "frequency": "Minute",
+                "interval": 3
+              },
+              "splitOn": "@triggerBody()?['value']",
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['outlook']['connectionId']"
+                  }
+                },
+                "method": "get",
+                "path": "/Mail/OnNewEmail",
+                "queries": {
+                  "fetchOnlyWithAttachment": false,
+                  "folderPath": "Inbox",
+                  "importance": "Any",
+                  "includeAttachments": false
+                }
+              }
+            }
+          },
+          "actions": {
+            "Check_Email_subject_and_address": {
+              "actions": {
+                "Send_SMS_Message": {
+                  "runAfter": {},
+                  "type": "ApiConnection",
+                  "inputs": {
+                    "body": {
+                      "MessageText": "Hello New Integration email is in your Inbox",
+                      "PhoneNumber": "+64212979640"
+                    },
+                    "host": {
+                      "connection": {
+                        "name": "@parameters('$connections')['telesignsms']['connectionId']"
+                      }
+                    },
+                    "method": "post",
+                    "path": "/api/SMS"
+                  }
+                }
+              },
+              "runAfter": {},
+              "expression": {
+                "and": [
+                  {
+                    "contains": [
+                      "@triggerBody()?['Subject']",
+                      "Integration"
+                    ]
+                  },
+                  {
+                    "equals": [
+                      "@triggerBody()?['From']",
+                      "samleuser@hotmai1.com"
+                    ]
+                  }
+                ]
+              },
+              "type": "If"
+            }
+          },
+          "outputs": {}
+        },
+        "parameters": {
+          "$connections": {
+            "value": {
+              "outlook": {
+                "id": "[concat(subscription().id, '/providers/Microsoft.Web/locations/', 'australiaeast', '/managedApis/', 'outlook')]",
+                "connectionId": "[resourceId('Microsoft.Web/connections', parameters('outlook_1_Connection_Name'))]",
+                "connectionName": "[parameters('outlook_1_Connection_Name')]"
+              },
+              "telesignsms": {
+                "id": "[concat(subscription().id, '/providers/Microsoft.Web/locations/', 'australiaeast', '/managedApis/', 'telesignsms')]",
+                "connectionId": "[resourceId('Microsoft.Web/connections', parameters('telesignsms_1_Connection_Name'))]",
+                "connectionName": "[parameters('telesignsms_1_Connection_Name')]"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "MICROSOFT.WEB/CONNECTIONS",
+      "apiVersion": "2016-06-01",
+      "name": "[parameters('telesignsms_1_Connection_Name')]",
+      "location": "australiaeast",
+      "properties": {
+        "api": {
+          "id": "[concat(subscription().id, '/providers/Microsoft.Web/locations/', parameters('logicAppLocation'), '/managedApis/', 'telesignsms')]"
+        },
+        "displayName": "[parameters('telesignsms_1_Connection_DisplayName')]",
+        "parameterValues": {
+          "username": "[parameters('telesignsms_1_username')]",
+          "password": "[parameters('telesignsms_1_password')]"
+        }
+      }
+    },
+    {
+      "type": "MICROSOFT.WEB/CONNECTIONS",
+      "apiVersion": "2016-06-01",
+      "name": "[parameters('outlook_1_Connection_Name')]",
+      "location": "australiaeast",
+      "properties": {
+        "api": {
+          "id": "[concat(subscription().id, '/providers/Microsoft.Web/locations/', parameters('logicAppLocation'), '/managedApis/', 'outlook')]"
+        },
+        "displayName": "[parameters('outlook_1_Connection_DisplayName')]"
+      }
+    },
+    {
+      "name": "sampleintegration0702",
+      "type": "Microsoft.Logic/workflows",
+      "location": "[parameters('logicAppLocation')]",
+      "apiVersion": "2016-06-01",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "sampleintegration0702"
+      },
+      "properties": {
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "actions": {
+            "Create_or_update_document": {
+              "runAfter": {
+                "Get_User_document": [
+                  "Succeeded"
+                ]
+              },
+              "type": "ApiConnection",
+              "inputs": {
+                "body": "@triggerBody()",
+                "headers": {
+                  "x-ms-documentdb-is-upsert": true,
+                  "x-ms-documentdb-partitionkey": "country"
+                },
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['documentdb']['connectionId']"
+                  }
+                },
+                "method": "post",
+                "path": "/dbs/@{encodeURIComponent('sampleintegration')}/colls/@{encodeURIComponent('integration')}/docs"
+              }
+            },
+            "Get_User_document": {
+              "runAfter": {},
+              "type": "ApiConnection",
+              "inputs": {
+                "headers": {
+                  "x-ms-documentdb-partitionkey": "contry"
+                },
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['documentdb']['connectionId']"
+                  }
+                },
+                "method": "get",
+                "path": "/dbs/@{encodeURIComponent('sampleintegration')}/colls/@{encodeURIComponent('integration')}/docs/@{encodeURIComponent('111111112222')}"
+              }
+            },
+            "HTTP": {
+              "type": "Http",
+              "inputs": {
+                "method": "POST",
+                "uri": "http://requestbin.fullcontact.com/1azzy681",
+                "body": "@triggerBody()"
+              },
+              "runAfter": {
+                "Get_User_document": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "parameters": {
+            "$connections": {
+              "defaultValue": {},
+              "type": "Object"
+            }
+          },
+          "triggers": {
+            "manual": {
+              "type": "Request",
+              "kind": "Http",
+              "inputs": {
+                "schema": {}
+              }
+            }
+          },
+          "contentVersion": "1.0.0.0",
+          "outputs": {}
+        },
+        "parameters": {
+          "$connections": {
+            "value": {
+              "documentdb": {
+                "id": "[concat(subscription().id, '/providers/Microsoft.Web/locations/', 'australiaeast', '/managedApis/', 'documentdb')]",
+                "connectionId": "[resourceId('Microsoft.Web/connections', parameters('documentdb_1_Connection_Name'))]",
+                "connectionName": "[parameters('documentdb_1_Connection_Name')]"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "MICROSOFT.WEB/CONNECTIONS",
+      "apiVersion": "2016-06-01",
+      "name": "[parameters('documentdb_1_Connection_Name')]",
+      "location": "australiaeast",
+      "properties": {
+        "api": {
+          "id": "[concat(subscription().id, '/providers/Microsoft.Web/locations/', parameters('logicAppLocation'), '/managedApis/', 'documentdb')]"
+        },
+        "displayName": "[parameters('documentdb_1_Connection_DisplayName')]",
+        "parameterValues": {
+          "databaseAccount": "[parameters('documentdb_1_databaseAccount')]",
+          "accessKey": "[parameters('documentdb_1_accessKey')]"
+        }
+      }
+    },
+    {
+      "name": "sampleintegration0703",
+      "type": "Microsoft.Logic/workflows",
+      "location": "[parameters('logicAppLocation')]",
+      "apiVersion": "2016-06-01",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "sampleintegration0703"
+      },
+      "properties": {
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "triggers": {
+            "manual": {
+              "type": "Request",
+              "kind": "Http",
+              "inputs": {
+                "schema": {}
+              }
+            }
+          },
+          "actions": {
+            "Parse_request_content": {
+              "runAfter": {},
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@triggerBody()",
+                "schema": {
+                  "properties": {
+                    "Postid": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "sentiment": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "Switch": {
+              "runAfter": {
+                "Parse_request_content": [
+                  "Succeeded"
+                ]
+              },
+              "cases": {
+                "Satisfaction_response_-01_": {
+                  "case": "good",
+                  "actions": {
+                    "Sentiment_Response_": {
+                      "runAfter": {},
+                      "type": "Response",
+                      "kind": "Http",
+                      "inputs": {
+                        "body": "@body('Parse_request_content')?['description']",
+                        "statusCode": 200
+                      }
+                    }
+                  }
+                },
+                "Satisfaction_response_-02": {
+                  "case": "excellent",
+                  "actions": {
+                    "Sentiment_Response__": {
+                      "runAfter": {},
+                      "type": "Response",
+                      "kind": "Http",
+                      "inputs": {
+                        "body": "@body('Parse_request_content')?['description']",
+                        "statusCode": 200
+                      }
+                    }
+                  }
+                },
+                "Satisfaction_response_-03": {
+                  "case": "bad",
+                  "actions": {
+                    "Sentiment_Response_____": {
+                      "runAfter": {},
+                      "type": "Response",
+                      "kind": "Http",
+                      "inputs": {
+                        "body": "@body('Parse_request_content')?['description']",
+                        "statusCode": 200
+                      }
+                    }
+                  }
+                }
+              },
+              "default": {
+                "actions": {}
+              },
+              "expression": "@body('Parse_request_content')?['sentiment']",
+              "type": "Switch"
+            }
+          },
+          "outputs": {}
+        },
+        "parameters": {}
+      }
+    },
+    {
+      "name": "sampleintegration0704",
+      "type": "Microsoft.Logic/workflows",
+      "location": "[parameters('logicAppLocation')]",
+      "apiVersion": "2016-06-01",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "sampleintegration0704"
+      },
+      "properties": {
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "triggers": {
+            "Recurrence": {
+              "recurrence": {
+                "frequency": "Day",
+                "interval": 3
+              },
+              "type": "Recurrence"
+            }
+          },
+          "actions": {
+            "Compose": {
+              "runAfter": {},
+              "type": "Compose",
+              "inputs": [
+                {
+                  "Postid": "1234567890",
+                  "description": "I enjoy working with logic apps",
+                  "sentiment": "good"
+                },
+                {
+                  "Postid": "1234567891",
+                  "description": "Awsome Integration",
+                  "sentiment": "excellent"
+                },
+                {
+                  "Postid": "1234567891",
+                  "description": "Failed to Evaluate expression",
+                  "sentiment": "bad"
+                },
+                {
+                  "Postid": "1234567891",
+                  "description": "My bad witten invalid expression language",
+                  "sentiment": "bad"
+                }
+              ]
+            },
+            "For_each": {
+              "foreach": "@outputs('Compose')",
+              "actions": {
+                "Send_Item_request": {
+                  "runAfter": {},
+                  "type": "Http",
+                  "inputs": {
+                    "body": "@items('For_each')",
+                    "method": "POST",
+                    "uri": "https://hookb.in/2qdRrq0rqdheY6nNykrl"
+                  }
+                }
+              },
+              "runAfter": {
+                "Compose": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Foreach",
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 5
+                }
+              }
+            }
+          },
+          "outputs": {}
+        },
+        "parameters": {}
+      }
+    },
+    {
+      "name": "sampleintegration0705",
+      "type": "Microsoft.Logic/workflows",
+      "location": "[parameters('logicAppLocation')]",
+      "apiVersion": "2016-06-01",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "sampleintegration0705"
+      },
+      "properties": {
+        {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "triggers": {
+            "Recurrence": {
+              "recurrence": {
+                "frequency": "Day",
+                "interval": 3
+              },
+              "type": "Recurrence"
+            }
+          },
+          "actions": {
+            "Parent_Scope": {
+              "actions": {
+                "Compose": {
+                  "runAfter": {},
+                  "type": "Compose",
+                  "inputs": [
+                    {
+                      "Postid": "1234567890",
+                      "description": "I enjoy working with logic apps",
+                      "sentiment": "good"
+                    },
+                    {
+                      "Postid": "1234567891",
+                      "description": "Awsome Integration",
+                      "sentiment": "excellent"
+                    },
+                    {
+                      "Postid": "1234567891",
+                      "description": "Failed to Evaluate expression",
+                      "sentiment": "bad"
+                    },
+                    {
+                      "Postid": "1234567891",
+                      "description": "My bad witten invalid expression language",
+                      "sentiment": "bad"
+                    }
+                  ]
+                },
+                "For_each": {
+                  "foreach": "@outputs('Compose')",
+                  "actions": {
+                    "Send_Item_request": {
+                      "runAfter": {},
+                      "type": "Http",
+                      "inputs": {
+                        "body": "@items('For_each')",
+                        "method": "POST",
+                        "uri": "https://hookb.in/2qdRrq0rqdheY6nNykrl1"
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Compose": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Foreach",
+                  "runtimeConfiguration": {
+                    "concurrency": {
+                      "repetitions": 5
+                    }
+                  }
+                }
+              },
+              "runAfter": {},
+              "type": "Scope"
+            },
+            "Run_After_Parent_Scope_Failed": {
+              "actions": {
+                "Filter_array": {
+                  "runAfter": {},
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@result('Parent_Scope')",
+                    "where": "@equals(item()['status'], 'Failed')"
+                  }
+                },
+                "For-each_Failed_message": {
+                  "foreach": "@body('Filter_array')",
+                  "actions": {
+                    "Log_Exception_Message": {
+                      "runAfter": {},
+                      "type": "Http",
+                      "inputs": {
+                        "body": "@items('For-each_Failed_message')?['inputs']?['foreachItems']",
+                        "method": "POST",
+                        "uri": "https://hookb.in/2qdRrq0rqdheY6nNykrl"
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Filter_array": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Foreach"
+                }
+              },
+              "runAfter": {
+                "Parent_Scope": [
+                  "Failed"
+                ]
+              },
+              "type": "Scope"
+            }
+          },
+          "outputs": {}
+        },
+        "parameters": {}
+      }
+    },
+    {
+      "name": "sampleintegration0706",
+      "type": "Microsoft.Logic/workflows",
+      "location": "[parameters('logicAppLocation')]",
+      "apiVersion": "2016-06-01",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "sampleintegration0706"
+      },
+      "properties": {
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "triggers": {
+            "Recurrence": {
+              "recurrence": {
+                "frequency": "Day",
+                "interval": 3
+              },
+              "type": "Recurrence"
+            }
+          },
+          "actions": {
+            "Send_5_Message_to_HTTP_endpoint": {
+              "actions": {
+                "Compose": {
+                  "runAfter": {},
+                  "type": "Compose",
+                  "inputs": [
+                    {
+                      "Postid": "1234567890",
+                      "description": "I enjoy working with logic apps",
+                      "sentiment": "good"
+                    },
+                    {
+                      "Postid": "1234567891",
+                      "description": "Awsome Integration",
+                      "sentiment": "excellent"
+                    },
+                    {
+                      "Postid": "1234567891",
+                      "description": "Failed to Evaluate expression",
+                      "sentiment": "bad"
+                    },
+                    {
+                      "Postid": "1234567891",
+                      "description": "My bad witten invalid expression language",
+                      "sentiment": "bad"
+                    }
+                  ]
+                },
+                "Condition": {
+                  "actions": {
+                    "HTTP": {
+                      "runAfter": {
+                        "Select": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "Http",
+                      "inputs": {
+                        "body": "@body('Select')",
+                        "method": "POST",
+                        "uri": "http://requestbin.fullcontact.com/1lh7ra21"
+                      }
+                    },
+                    "Increment_variable": {
+                      "runAfter": {
+                        "HTTP": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "IncrementVariable",
+                      "inputs": {
+                        "name": "intvarfordountil",
+                        "value": 1
+                      }
+                    },
+                    "Select": {
+                      "runAfter": {},
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@outputs('Compose')",
+                        "select": {
+                          "Post": "@outputs('Compose')"
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Compose": [
+                      "Succeeded"
+                    ]
+                  },
+                  "expression": {
+                    "and": [
+                      {
+                        "less": [
+                          "@variables('intvarfordountil')",
+                          5
+                        ]
+                      }
+                    ]
+                  },
+                  "type": "If"
+                }
+              },
+              "runAfter": {
+                "int_variable": [
+                  "Succeeded"
+                ]
+              },
+              "expression": "@equals(variables('intvarfordountil'), 5)",
+              "limit": {
+                "count": 60,
+                "timeout": "PT1H"
+              },
+              "type": "Until"
+            },
+            "int_variable": {
+              "runAfter": {},
+              "type": "InitializeVariable",
+              "inputs": {
+                "variables": [
+                  {
+                    "name": "intvarfordountil",
+                    "type": "Integer",
+                    "value": 0
+                  }
+                ]
+              }
+            }
+          },
+          "outputs": {}
+        },
+        "parameters": {}
+      }
+    },
+    {
+      "name": "sampleintegration0707",
+      "type": "Microsoft.Logic/workflows",
+      "location": "[parameters('logicAppLocation')]",
+      "apiVersion": "2016-06-01",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "sampleintegration0707"
+      },
+      "properties": {
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "triggers": {
+            "Recurrence": {
+              "recurrence": {
+                "frequency": "Day",
+                "interval": 3
+              },
+              "type": "Recurrence"
+            }
+          },
+          "actions": {
+            "Child_Scope": {
+              "actions": {
+                "Filter_array": {
+                  "runAfter": {},
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@result('Parent_Scope')",
+                    "where": "@equals(item()['status'], 'Failed')"
+                  }
+                },
+                "For-each_message": {
+                  "foreach": "@body('Filter_array')",
+                  "actions": {
+                    "Send_Message": {
+                      "runAfter": {},
+                      "type": "Http",
+                      "inputs": {
+                        "body": "@items('For-each_message')?['inputs']?['foreachItems']",
+                        "method": "POST",
+                        "uri": "https://hookb.in/2qdRrq0rqdheY6nNykrl"
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Filter_array": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Foreach"
+                }
+              },
+              "runAfter": {
+                "Parent_Scope": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Scope"
+            },
+            "Parent_Scope": {
+              "actions": {
+                "Compose": {
+                  "runAfter": {},
+                  "type": "Compose",
+                  "inputs": [
+                    {
+                      "Postid": "1234567890",
+                      "description": "I enjoy working with logic apps",
+                      "sentiment": "good"
+                    },
+                    {
+                      "Postid": "1234567891",
+                      "description": "Awsome Integration",
+                      "sentiment": "excellent"
+                    },
+                    {
+                      "Postid": "1234567891",
+                      "description": "Failed to Evaluate expression",
+                      "sentiment": "bad"
+                    },
+                    {
+                      "Postid": "1234567891",
+                      "description": "My bad witten invalid expression language",
+                      "sentiment": "bad"
+                    }
+                  ]
+                },
+                "For_each": {
+                  "foreach": "@outputs('Compose')",
+                  "actions": {
+                    "Send_Item_request": {
+                      "runAfter": {},
+                      "type": "Http",
+                      "inputs": {
+                        "body": "@items('For_each')",
+                        "method": "POST",
+                        "uri": "https://hookb.in/2qdRrq0rqdheY6nNykrl1"
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Compose": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Foreach",
+                  "runtimeConfiguration": {
+                    "concurrency": {
+                      "repetitions": 5
+                    }
+                  }
+                }
+              },
+              "runAfter": {},
+              "type": "Scope"
+            },
+            "Terminate": {
+              "runAfter": {
+                "Parent_Scope": [
+                  "Failed"
+                ]
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Cancelled"
+              }
+            }
+          },
+          "outputs": {}
+        },
+        "parameters": {}
+      }
+    },
+    {
+      "name": "sampleintegration0708",
+      "type": "Microsoft.Logic/workflows",
+      "location": "[parameters('logicAppLocation')]",
+      "apiVersion": "2016-06-01",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "sampleintegration0708"
+      },
+      "properties": {
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "triggers": {
+            "manual": {
+              "type": "Request",
+              "kind": "Http",
+              "inputs": {
+                "schema": {}
+              }
+            }
+          },
+          "actions": {
+            "Convert_xml_to_base64_and_post_to_HTTP_endpoint": {
+              "runAfter": {
+                "Post_xml_message_to_HTTP_endpoint": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Http",
+              "inputs": {
+                "body": "@{base64(xml(triggerBody()))}",
+                "method": "POST",
+                "uri": "http://requestbin.fullcontact.com/1lh7ra21"
+              }
+            },
+            "Post_xml_message_to_HTTP_endpoint": {
+              "runAfter": {},
+              "type": "Http",
+              "inputs": {
+                "body": "@xml(triggerBody())",
+                "method": "POST",
+                "uri": "https://hookb.in/2qdRrq0rqdheY6nNykrl"
+              }
+            },
+            "Response": {
+              "runAfter": {
+                "Convert_xml_to_base64_and_post_to_HTTP_endpoint": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "body": "@{json(xml(base64toString(base64(xml(triggerBody())))))}",
+                "statusCode": 200
+              }
+            }
+          },
+          "outputs": {}
+        },
+        "parameters": {}
+      }
+    },
+    {
+      "name": "sampleintegration0709",
+      "type": "Microsoft.Logic/workflows",
+      "location": "[parameters('logicAppLocation')]",
+      "apiVersion": "2016-06-01",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "sampleintegration0709"
+      },
+      "properties": {
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "triggers": {
+            "manual": {
+              "type": "Request",
+              "kind": "Http",
+              "inputs": {
+                "schema": {
+                  "properties": {
+                    "Postid": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "description": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "sentiment": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "actions": {
+            "Parse_JSON": {
+              "runAfter": {},
+              "type": "ParseJson",
+              "inputs": {
+                "content": "@triggerBody()",
+                "schema": {
+                  "properties": {
+                    "Postid": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "description": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "sentiment": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "Response": {
+              "runAfter": {
+                "Parse_JSON": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "body": "@body('Parse_JSON')?['description']",
+                "statusCode": 200
+              }
+            }
+          },
+          "outputs": {}
+        },
+        "parameters": {}
+      }
+    },
+    {
+      "name": "sampleintegration0710",
+      "type": "Microsoft.Logic/workflows",
+      "location": "[parameters('logicAppLocation')]",
+      "apiVersion": "2016-06-01",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "sampleintegration0710"
+      },
+      "properties": {
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "triggers": {
+            "manual": {
+              "type": "Request",
+              "kind": "Http",
+              "inputs": {
+                "schema": {}
+              }
+            }
+          },
+          "actions": {
+            "HTTP": {
+              "runAfter": {},
+              "type": "Http",
+              "inputs": {
+                "method": "POST",
+                "uri": "http://requestbin.fullcontact.com/1fcg3271"
+              }
+            }
+          },
+          "outputs": {}
+        },
+        "parameters": {}
+      }
+    }
+
+  ],
+  "outputs": {}
+}
