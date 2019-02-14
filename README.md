@@ -9,7 +9,7 @@ This is the code repository for [Serverless Integration Design Patterns with Azu
 ## What is this book about?
 With more enterprises adapting cloud-based and API-based solutions, application integration has become more relevant and significant than ever before. Parallelly, Serverless Integration has gained popularity, as it helps agile organizations to build integration solutions quickly without having to worry about infrastructure costs. With Microsoft Azure’s serverless offerings, such as Logic Apps, Azure Functions, API Management, Azure Event Grid and Service Bus, organizations can build powerful, secure, and scalable integration solutions with ease.
 
-This book covers the following exciting features: <First 5 What you'll learn points>
+This book covers the following exciting features: 
 * Learn about the design principles of Microsoft Azure Serverless Integration
 * Get insights into Azure Functions, Logic Apps, Azure Event Grid and Service Bus
 * Secure and manage your integration endpoints using Azure API Management
